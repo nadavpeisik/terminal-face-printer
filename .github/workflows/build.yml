@@ -1,0 +1,32 @@
+name: Build Windows executables
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build scary_faces.exe
+        run: pyinstaller --onefile --name scary_faces scary_faces.py
+
+      - name: Build slenderman.exe
+        run: pyinstaller --onefile --name slenderman slenderman.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-executables
+          path: |
+            dist/scary_faces.exe
+            dist/slenderman.exe
