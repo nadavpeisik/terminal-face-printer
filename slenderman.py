@@ -42,6 +42,26 @@ def enable_windows_ansi():
     if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
         kernel32.SetConsoleMode(handle, mode.value | 0x0004)  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
 
+
+if sys.platform == "win32":
+    import winsound
+
+
+def win_ambient_beep():
+    """Windows has no afplay/say; approximate an ambient sound with beeps."""
+    low = random.choice([70, 90, 120])
+    for _ in range(random.randint(2, 4)):
+        winsound.Beep(random.randint(low, low + 40), random.randint(120, 220))
+        time.sleep(0.05)
+
+
+def win_scream_beep():
+    """Windows has no afplay/say; approximate the jump-scare scream."""
+    for f in range(400, 1800, 90):
+        winsound.Beep(f, 20)
+    for f in (1200, 600, 1200, 600, 900):
+        winsound.Beep(f, 70)
+
 BRIGHT_WHITE = "\033[97m"
 WHITE = "\033[37m"
 GRAY = "\033[90m"
@@ -123,11 +143,14 @@ def scale(lines, s):
     return out
 
 
-def play(cmd, mute):
+def play(cmd, mute, scream=False):
     if mute:
         return
     if sys.platform == "darwin" and shutil.which(cmd[0]):
         subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    elif sys.platform == "win32":
+        threading.Thread(target=win_scream_beep if scream else win_ambient_beep,
+                         daemon=True).start()
     else:
         sys.stdout.write("\a")
         sys.stdout.flush()
@@ -272,7 +295,7 @@ def jump_scare(screen, mute):
     left = max((cols - fw2) // 2, 0)
     top = max((rows - len(face)) // 2, 0)
 
-    play(SCREAM, mute)
+    play(SCREAM, mute, scream=True)
 
     def draw(color, invert=False):
         buf, colbuf = new_buffer(cols, rows)
